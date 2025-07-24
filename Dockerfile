@@ -1,17 +1,22 @@
-# Use official OpenJDK image
-FROM openjdk:17-jdk-slim
+# Use Maven to build the app first
+FROM maven:3.9.6-eclipse-temurin-17 as builder
 
-# Add metadata
-LABEL maintainer="your-email@example.com"
-
-# Set workdir inside the container
 WORKDIR /app
 
-# Copy the JAR (replace with your actual JAR name if known)
-COPY target/*.jar app.jar
+# Copy source code
+COPY . .
 
-# Expose port (Spring Boot default)
+# Build the app
+RUN mvn clean package -DskipTests
+
+# Use a smaller JDK image to run the app
+FROM eclipse-temurin:17-jdk-alpine
+
+WORKDIR /app
+
+# Copy the built JAR from the previous image
+COPY --from=builder /app/target/*.jar app.jar
+
 EXPOSE 8080
 
-# Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]
